@@ -34,11 +34,11 @@ class DockerClient(httpx.AsyncClient):
     async def request(self, *args: Any, **kwargs: Any) -> httpx.Response:
         """Back off and retry requests if rate-limited."""
         # https://docs.docker.com/reference/api/hub/latest/#tag/rate-limiting
-        r = await super().request(*args, **kwargs)
-        if r.status_code != 429:  # Too Many Requests
-            return r
-        await asyncio.sleep(int(r.headers["Retry-After"]) - time.time())
-        return await self.request(*args, **kwargs)
+        while True:
+            r = await super().request(*args, **kwargs)
+            if r.status_code != 429:  # Too Many Requests
+                return r
+            await asyncio.sleep(int(r.headers["Retry-After"]) - time.time())
 
 
 # https://docs.docker.com/reference/api/hub/latest/
